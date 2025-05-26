@@ -1,79 +1,116 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+from dotenv import load_dotenv
+import os
 import time
 
-# CONFIGURAR CHROME (puede sacar el modo headless si querés ver la UI)
+# === CARGAR VARIABLES DE ENTORNO ===
+load_dotenv()
+EMAIL = os.getenv("EMAIL")
+PASSWORD = os.getenv("PASSWORD")
+
+# === CONFIGURACIÓN DE CHROME ===
 chrome_options = Options()
-chrome_options.add_argument("--headless")  # sacar esta línea si querés ver el navegador
+# chrome_options.add_argument("--headless")  # dejar comentado para ver lo que pasa
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 
-# INICIAR CHROME
+# === INICIAR CHROME ===
 driver = webdriver.Chrome(options=chrome_options)
-
-# URL a visitar
 url = "http://localhost:3001/dashboard/1-e-commerce-insights"
 driver.get(url)
 print("✅ Página cargada")
 
-# ESPERAR Y HACER CLIC EN EL PRIMER BOTÓN: menú de tarjeta
+# === LOGIN ===
 try:
-    btn_menu = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-testid='dashcard-menu']"))
+    username = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.NAME, "username"))
+    )
+    password = driver.find_element(By.NAME, "password")
+    username.send_keys(EMAIL)
+    password.send_keys(PASSWORD)
+    driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+    print("✅ Login enviado")
+except Exception as e:
+    print("❌ Error en login:", e)
+    driver.quit()
+    exit()
+
+time.sleep(2)
+
+# === HOVER EN EL GRÁFICO PARA MOSTRAR EL MENÚ ===
+try:
+    contenedor = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, "div.emotion-onvfvp.e1w4a5v40"))
+    )
+    ActionChains(driver).move_to_element(contenedor).perform()
+    print("✅ Hover sobre el contenedor del gráfico realizado")
+except Exception as e:
+    print("❌ Error al hacer hover:", e)
+    driver.quit()
+    exit()
+
+time.sleep(0.8)
+
+# === BOTÓN DE MENÚ DEL DASHBOARD ===
+try:
+    btn_menu = WebDriverWait(driver, 5).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='dashcard-menu']"))
     )
     btn_menu.click()
-    print("✅ Menú abierto")
+    print("✅ Botón de menú clickeado después del hover")
 except Exception as e:
-    print("❌ Error al abrir el menú:", e)
+    print("❌ No se pudo hacer clic en el botón de menú:", e)
     driver.quit()
     exit()
 
 time.sleep(1.5)
 
-# SEGUNDO BOTÓN: "Descarga los resultados"
+# === CLIC EN "Descarga los resultados" ===
 try:
-    btn_descargar_resultados = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "//button[div[contains(text(),'Descarga los resultados')]]"))
+    btn_descarga = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[role='menuitem'][label='Descarga los resultados']"))
     )
-    btn_descargar_resultados.click()
+    btn_descarga.click()
     print("✅ Se hizo clic en 'Descarga los resultados'")
 except Exception as e:
-    print("❌ Error en 'Descarga los resultados':", e)
+    print("❌ Error en el botón de descarga:", e)
     driver.quit()
     exit()
 
 time.sleep(1.5)
 
-# TERCERO: Seleccionar formato .xlsx
+# === SELECCIONAR FORMATO XLSX ===
 try:
     radio_xlsx = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='radio'][value='xlsx']"))
     )
     driver.execute_script("arguments[0].click();", radio_xlsx)
-    print("✅ Se seleccionó el formato .xlsx")
+    print("✅ XLSX seleccionado")
 except Exception as e:
-    print("❌ Error al seleccionar .xlsx:", e)
+    print("❌ Error al seleccionar formato:", e)
     driver.quit()
     exit()
 
 time.sleep(1.5)
 
-# CUARTO: Botón final de descarga
+# === BOTÓN FINAL DE DESCARGA ===
 try:
-    btn_final_descarga = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-testid='download-results-button']"))
+    btn_final = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='download-results-button']"))
     )
-    btn_final_descarga.click()
-    print("✅ Descarga iniciada")
+    time.sleep(1.5)
+    driver.execute_script("arguments[0].click();", btn_final)
+    print("✅ Botón final de descarga clickeado")
+    time.sleep(5)  # esperar la descarga
 except Exception as e:
-    print("❌ Error al iniciar la descarga:", e)
+    print("❌ Error al iniciar descarga:", e)
     driver.quit()
     exit()
 
-# CERRAR
 driver.quit()
-print("🎉 Script finalizado con éxito")
+print("🎉 Script completado con éxito")
